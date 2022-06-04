@@ -811,8 +811,12 @@ class LoadImagesAndLabels9(Dataset):  # for training/testing
             except Exception as e:
                 print('WARNING: Ignoring corrupted image and/or label %s: %s' % (img, e))
 
-        x['hash'] = get_hash(self.label_files + self.img_files)
-        torch.save(x, path)  # save for next time
+        try:
+            x['hash'] = get_hash(self.label_files + self.img_files)
+            torch.save(x, path)  # save for next time
+        except Exception as e:
+            print(f'WARNING: Caching directory is not writeable {e}')
+        
         return x
 
     def __len__(self):

@@ -153,7 +153,13 @@ def create_modules(module_defs, img_size, cfg):
             layers = mdef['layers']
             filters = sum([output_filters[l + 1 if l > 0 else l] for l in layers])
             routs.extend([i + l if l < 0 else l for l in layers])
-            modules = FeatureConcat(layers=layers)
+
+            if 'groups' in mdef:
+                groups = mdef['groups']
+                group_id = mdef['group_id']
+                modules = RouteGroup(layers=layers, groups=groups, group_id=group_id)
+            else:
+                modules = FeatureConcat(layers=layers)
 
         elif mdef['type'] == 'route2':  # nn.Sequential() placeholder for 'route' layer
             layers = mdef['layers']
@@ -507,7 +513,7 @@ class Darknet(nn.Module):
         for i, module in enumerate(self.module_list):
             name = module.__class__.__name__
             #print(name)
-            if name in ['WeightedFeatureFusion', 'FeatureConcat', 'FeatureConcat2', 'FeatureConcat3', 'FeatureConcat_l', 'ScaleChannel', 'ScaleSpatial']:  # sum, concat
+            if name in ['WeightedFeatureFusion', 'FeatureConcat', 'FeatureConcat2', 'FeatureConcat3', 'FeatureConcat_l', 'ScaleChannel', 'ScaleSpatial', 'RouteGroup']:  # sum, concat
                 if verbose:
                     l = [i - 1] + module.layers  # layers
                     sh = [list(x.shape)] + [list(out[i].shape) for i in module.layers]  # shapes
@@ -562,7 +568,6 @@ class Darknet(nn.Module):
 
     def info(self, verbose=False):
         torch_utils.model_info(self, verbose)
-
 
 def get_yolo_layers(model):
     return [i for i, m in enumerate(model.module_list) if m.__class__.__name__ in ['YOLOLayer', 'JDELayer']]  # [89, 101, 113]
